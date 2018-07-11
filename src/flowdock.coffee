@@ -118,10 +118,13 @@ class Session extends events.EventEmitter
 
     request options, (err, res, body) =>
       if err
+        console.log('node-flowdock: flowdock->request->err', err)
         error = new Error('Couldn\'t connect to Flowdock:' + err.toString())
       else if res.statusCode >= 300
+        console.log('node-flowdock: flowdock->request->statusCode >= 300', res.statusCode)
         error = new Error('Received status ' + res.statusCode)
       if error?
+        console.log('node-flowdock: flowdock->request->error', error)
         @emit 'error', error
         cb?(error)
       else

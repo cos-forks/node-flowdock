@@ -7,6 +7,7 @@ baseURL = ->
   url.parse(process.env.FLOWDOCK_STREAM_URL || 'https://stream.flowdock.com/flows')
 
 backoff = (backoff, errors, operator = '*') ->
+  console.log('node-flowdock: steam->backoff', backoff, errors, oeprator)
   Math.min(
     backoff.max,
     (if operator == '+'
@@ -20,6 +21,7 @@ class Stream extends events.EventEmitter
     @networkErrors = 0
     @responseErrors = 0
     @on 'reconnecting', (timeout) =>
+      console.log('node-flowdock: steam->constructor->on.reconnecting', timeout)
       setTimeout =>
         @connect()
       , timeout
@@ -32,6 +34,7 @@ class Stream extends events.EventEmitter
 
     errorHandler = (error) =>
       @networkErrors += 1
+      console.log('node-flowdock: steam->connect->errorHandler', error)
       @emit 'clientError', 0, 'Network error'
       @emit 'reconnecting', (backoff Stream.backoff.network, @networkErrors, '+')
 
@@ -41,6 +44,7 @@ class Stream extends events.EventEmitter
       @networkErrors = 0
       if response.statusCode >= 400
         @responseErrors += 1
+        console.log('node-flowdock: steam->connect->request->statusCode > 400', response)
         @emit 'clientError', response.statusCode
         @emit 'reconnecting', (backoff Stream.backoff.error, @responseErrors, '*')
       else
@@ -50,16 +54,19 @@ class Stream extends events.EventEmitter
           @emit 'message', message
 
         @request.on 'abort', =>
+          console.log('node-flowdock: steam->connect->request->abort')
           parser.removeAllListeners()
           @emit 'disconnected'
           @emit 'end'
 
         parser.on 'end', =>
+          console.log('node-flowdock: steam->connect->request->end')
           parser.removeAllListeners()
           @emit 'disconnected'
           @emit 'clientError', 0, 'Disconnected'
           @emit 'reconnecting', 0
 
+        console.log('node-flowdock: steam->connect->connected')
         @request.pipe parser
         @emit 'connected'
     @request.once 'error', errorHandler
@@ -83,6 +90,7 @@ class Stream extends events.EventEmitter
   end: ->
     @disconnecting = true
     if @request
+      console.log('node-flowdock: steam->end')
       @request.abort()
       @request.removeAllListeners()
       @request = undefined
@@ -92,6 +100,7 @@ class Stream extends events.EventEmitter
 
 # Connect to flows
 Stream.connect = (auth, flows, params) ->
+  console.log('node-flowdock: steam->connect')
   stream = new Stream auth, flows, params
   stream.connect()
   stream
